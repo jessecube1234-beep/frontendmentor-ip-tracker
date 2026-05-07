@@ -41,6 +41,14 @@ function normalizeLocation(location) {
   return parts.length > 0 ? parts.join(', ') : 'Unknown';
 }
 
+function isValidLookupInput(value) {
+  const ipv4Pattern =
+    /^(?:(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)\.){3}(?:25[0-5]|2[0-4]\d|1\d{2}|[1-9]?\d)$/;
+  const domainPattern =
+    /^(?=.{1,253}$)(?!-)(?:[a-zA-Z0-9-]{1,63}\.)+[a-zA-Z]{2,63}$/;
+  return ipv4Pattern.test(value) || domainPattern.test(value);
+}
+
 function App() {
   const [query, setQuery] = useState(INITIAL_QUERY);
   const [isLoading, setIsLoading] = useState(false);
@@ -131,7 +139,14 @@ function App() {
         lon: payload.location?.lng ?? FALLBACK_CENTER.lon,
       });
     } catch (lookupError) {
-      setError(lookupError.message || 'Unable to find that IP or domain. Please try another value.');
+      const message = lookupError?.message || 'Unable to find that IP or domain. Please try another value.';
+      if (/API key|invalid api key/i.test(message)) {
+        setError('Your API key appears invalid. Check VITE_IPIFY_API_KEY in .env.');
+      } else if (/quota|rate/i.test(message)) {
+        setError('API limit reached. Try again later or use a new key.');
+      } else {
+        setError(message);
+      }
     } finally {
       setIsLoading(false);
     }
@@ -143,6 +158,10 @@ function App() {
 
     if (!trimmed) {
       setError('Enter an IP address or domain first.');
+      return;
+    }
+    if (!isValidLookupInput(trimmed)) {
+      setError('Enter a valid IPv4 address or domain (example.com).');
       return;
     }
 
@@ -169,13 +188,20 @@ function App() {
             placeholder="Search for any IP address or domain"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
+            aria-invalid={Boolean(error)}
+            aria-describedby="tracker-status"
           />
-          <button className="tracker__button" type="submit" aria-label="Search">
+          <button className="tracker__button" type="submit" aria-label="Search" disabled={isLoading}>
             <span aria-hidden="true">&rsaquo;</span>
           </button>
         </form>
-        {error ? <p className="tracker__message tracker__message--error">{error}</p> : null}
-        {isLoading ? <p className="tracker__message">Looking up location...</p> : null}
+        <p
+          id="tracker-status"
+          className={`tracker__message${error ? ' tracker__message--error' : ''}`}
+          aria-live="polite"
+        >
+          {error || (isLoading ? 'Looking up location...' : ' ')}
+        </p>
       </header>
 
       <section className="tracker__details" aria-label="IP details">
