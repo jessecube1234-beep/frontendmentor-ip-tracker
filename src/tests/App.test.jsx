@@ -29,7 +29,7 @@ vi.mock('leaflet', () => {
 describe('App', () => {
   beforeEach(() => {
     vi.stubEnv('VITE_IPIFY_API_KEY', 'test-key');
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: true,
       json: async () => ({
         ip: '8.8.8.8',
@@ -80,7 +80,7 @@ describe('App', () => {
   });
 
   it('shows api error message when request fails', async () => {
-    global.fetch = vi.fn().mockResolvedValue({
+    globalThis.fetch = vi.fn().mockResolvedValue({
       ok: false,
       json: async () => ({ messages: ['Rate limit exceeded'] }),
     });
