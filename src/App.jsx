@@ -4,7 +4,6 @@ import 'leaflet/dist/leaflet.css';
 
 const INITIAL_QUERY = '192.212.174.101';
 const FALLBACK_CENTER = { lat: 40.7128, lon: -74.006 };
-const IPIFY_API_KEY = import.meta.env.VITE_IPIFY_API_KEY;
 const mapPinIcon = L.divIcon({
   className: 'map-pin',
   iconSize: [30, 30],
@@ -113,8 +112,9 @@ function App() {
   async function lookup(target) {
     setIsLoading(true);
     setError('');
+    const apiKey = import.meta.env.VITE_IPIFY_API_KEY;
 
-    if (!IPIFY_API_KEY) {
+    if (!apiKey) {
       setError('Missing VITE_IPIFY_API_KEY in .env');
       setIsLoading(false);
       return;
@@ -122,7 +122,7 @@ function App() {
 
     try {
       const response = await fetch(
-        `https://geo.ipify.org/api/v2/country,city?apiKey=${encodeURIComponent(IPIFY_API_KEY)}&ipAddress=${encodeURIComponent(target)}`
+        `https://geo.ipify.org/api/v2/country,city?apiKey=${encodeURIComponent(apiKey)}&ipAddress=${encodeURIComponent(target)}`
       );
       const payload = await response.json();
 
