@@ -13,6 +13,7 @@ L.Icon.Default.mergeOptions({
 
 const INITIAL_QUERY = '192.212.174.101';
 const FALLBACK_CENTER = { lat: 40.7128, lon: -74.006 };
+const IPIFY_API_KEY = import.meta.env.VITE_IPIFY_API_KEY;
 
 function toTimezoneLabel(timezone) {
   if (!timezone) {
@@ -38,8 +39,8 @@ function toTimezoneLabel(timezone) {
   }
 }
 
-function normalizeLocation(data) {
-  const parts = [data.city, data.region, data.postal].filter(Boolean);
+function normalizeLocation(location) {
+  const parts = [location?.city, location?.region, location?.postalCode].filter(Boolean);
   return parts.length > 0 ? parts.join(', ') : 'Unknown';
 }
 
@@ -106,26 +107,32 @@ function App() {
     setIsLoading(true);
     setError('');
 
+    if (!IPIFY_API_KEY) {
+      setError('Missing VITE_IPIFY_API_KEY in .env');
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const response = await fetch(
-        `https://ipwho.is/${encodeURIComponent(target)}`
+        `https://geo.ipify.org/api/v2/country,city?apiKey=${encodeURIComponent(IPIFY_API_KEY)}&ipAddress=${encodeURIComponent(target)}`
       );
       const payload = await response.json();
 
-      if (!response.ok || payload.success === false) {
-        throw new Error(payload.message || 'Lookup failed.');
+      if (!response.ok || payload.code || payload.messages) {
+        throw new Error(payload.messages?.[0] || 'Lookup failed.');
       }
 
       setDetails({
         ip: payload.ip || target,
-        location: normalizeLocation(payload),
-        timezone: toTimezoneLabel(payload.timezone),
-        isp: payload.connection?.isp || payload.connection?.org || 'Unknown',
-        lat: payload.lat ?? FALLBACK_CENTER.lat,
-        lon: payload.longitude ?? FALLBACK_CENTER.lon,
+        location: normalizeLocation(payload.location),
+        timezone: toTimezoneLabel(payload.location?.timezone),
+        isp: payload.isp || 'Unknown',
+        lat: payload.location?.lat ?? FALLBACK_CENTER.lat,
+        lon: payload.location?.lng ?? FALLBACK_CENTER.lon,
       });
-    } catch {
-      setError('Unable to find that IP or domain. Please try another value.');
+    } catch (lookupError) {
+      setError(lookupError.message || 'Unable to find that IP or domain. Please try another value.');
     } finally {
       setIsLoading(false);
     }
