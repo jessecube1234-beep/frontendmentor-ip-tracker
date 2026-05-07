@@ -103,6 +103,18 @@ body {
   background: #2d2d31;
 }
 
+.tracker__message {
+  margin: 0.65rem auto 0;
+  width: min(34.7rem, 100%);
+  color: #e6e8fb;
+  font-size: 0.88rem;
+  text-align: center;
+}
+
+.tracker__message--error {
+  color: #ffd3d3;
+}
+
 .tracker__details {
   width: min(69.5rem, calc(100% - 3rem));
   margin: -4.3rem auto 0;
@@ -164,18 +176,17 @@ body {
     linear-gradient(rgb(255 255 255 / 20%) 1px, transparent 1px) 0 0 / 80px 80px;
   mix-blend-mode: multiply;
   pointer-events: none;
+  z-index: 2;
 }
 
-.tracker__pin {
-  width: 1.65rem;
-  aspect-ratio: 1;
-  border-radius: 50%;
-  background: #111;
+.tracker__map-canvas {
   position: absolute;
-  top: 56%;
-  left: 53%;
-  transform: translate(-50%, -50%);
-  box-shadow: 0 0 0 6px rgb(255 255 255 / 90%), 0 8px 18px rgb(24 24 27 / 35%);
+  inset: 0;
+  z-index: 1;
+}
+
+.leaflet-container {
+  font-family: 'Rubik', sans-serif;
 }
 
 .sr-only {
