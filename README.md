@@ -2,6 +2,9 @@
 
 A React + Vite solution to the Frontend Mentor IP Address Tracker challenge.
 
+<img width="1912" height="946" alt="image" src="https://github.com/user-attachments/assets/5a1f8d0b-703a-46d2-94a9-345fe4e076cf" />
+
+
 ## Overview
 
 This app lets users search by IPv4 address or domain and view:
