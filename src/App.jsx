@@ -19,6 +19,10 @@ function toTimezoneLabel(timezone) {
     return 'UTC';
   }
 
+  if (typeof timezone === 'object' && timezone.utc) {
+    return timezone.utc;
+  }
+
   try {
     const date = new Date();
     const localTime = new Date(date.toLocaleString('en-US', { timeZone: timezone }));
@@ -35,7 +39,7 @@ function toTimezoneLabel(timezone) {
 }
 
 function normalizeLocation(data) {
-  const parts = [data.city, data.regionName, data.zip].filter(Boolean);
+  const parts = [data.city, data.region, data.postal].filter(Boolean);
   return parts.length > 0 ? parts.join(', ') : 'Unknown';
 }
 
@@ -57,31 +61,32 @@ function App() {
   const markerRef = useRef(null);
 
   useEffect(() => {
-    if (!mapContainerRef.current || mapRef.current) {
-      return;
-    }
+    if (!mapContainerRef.current || mapRef.current) return;
 
-    const map = L.map(mapContainerRef.current, { zoomControl: false }).setView(
-      [details.lat, details.lon],
-      13
-    );
+    const map = L.map(mapContainerRef.current, { zoomControl: false }).setView([
+      FALLBACK_CENTER.lat,
+      FALLBACK_CENTER.lon,
+    ], 13);
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '&copy; OpenStreetMap contributors',
     }).addTo(map);
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
-    markerRef.current = L.marker([details.lat, details.lon]).addTo(map);
+    markerRef.current = L.marker([FALLBACK_CENTER.lat, FALLBACK_CENTER.lon]).addTo(map);
     mapRef.current = map;
-  }, [details.lat, details.lon]);
+  }, []);
 
   useEffect(() => {
-    if (!mapRef.current || !markerRef.current) {
-      return;
+    if (!mapRef.current) return;
+    const coords = [details.lat, details.lon];
+
+    if (!markerRef.current || !markerRef.current._map) {
+      markerRef.current = L.marker(coords).addTo(mapRef.current);
+    } else {
+      markerRef.current.setLatLng(coords);
     }
 
-    const coords = [details.lat, details.lon];
-    markerRef.current.setLatLng(coords);
     mapRef.current.setView(coords, 13, { animate: true });
   }, [details.lat, details.lon]);
 
@@ -91,6 +96,8 @@ function App() {
     return () => {
       if (mapRef.current) {
         mapRef.current.remove();
+        mapRef.current = null;
+        markerRef.current = null;
       }
     };
   }, []);
@@ -101,21 +108,21 @@ function App() {
 
     try {
       const response = await fetch(
-        `https://ip-api.com/json/${encodeURIComponent(target)}?fields=status,message,query,city,regionName,zip,timezone,isp,lat,lon`
+        `https://ipwho.is/${encodeURIComponent(target)}`
       );
       const payload = await response.json();
 
-      if (!response.ok || payload.status !== 'success') {
-        throw new Error(payload.message || 'Lookup failed');
+      if (!response.ok || payload.success === false) {
+        throw new Error(payload.message || 'Lookup failed.');
       }
 
       setDetails({
-        ip: payload.query || target,
+        ip: payload.ip || target,
         location: normalizeLocation(payload),
         timezone: toTimezoneLabel(payload.timezone),
-        isp: payload.isp || 'Unknown',
+        isp: payload.connection?.isp || payload.connection?.org || 'Unknown',
         lat: payload.lat ?? FALLBACK_CENTER.lat,
-        lon: payload.lon ?? FALLBACK_CENTER.lon,
+        lon: payload.longitude ?? FALLBACK_CENTER.lon,
       });
     } catch {
       setError('Unable to find that IP or domain. Please try another value.');
