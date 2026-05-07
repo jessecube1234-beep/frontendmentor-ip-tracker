@@ -1,19 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import markerIcon2x from 'leaflet/dist/images/marker-icon-2x.png';
-import markerIcon from 'leaflet/dist/images/marker-icon.png';
-import markerShadow from 'leaflet/dist/images/marker-shadow.png';
-
-L.Icon.Default.mergeOptions({
-  iconRetinaUrl: markerIcon2x,
-  iconUrl: markerIcon,
-  shadowUrl: markerShadow,
-});
 
 const INITIAL_QUERY = '192.212.174.101';
 const FALLBACK_CENTER = { lat: 40.7128, lon: -74.006 };
 const IPIFY_API_KEY = import.meta.env.VITE_IPIFY_API_KEY;
+const mapPinIcon = L.divIcon({
+  className: 'map-pin',
+  iconSize: [30, 30],
+  iconAnchor: [15, 30],
+  html: '<span class="map-pin__dot" aria-hidden="true"></span>',
+});
 
 function toTimezoneLabel(timezone) {
   if (!timezone) {
@@ -74,7 +71,9 @@ function App() {
     }).addTo(map);
 
     L.control.zoom({ position: 'bottomright' }).addTo(map);
-    markerRef.current = L.marker([FALLBACK_CENTER.lat, FALLBACK_CENTER.lon]).addTo(map);
+    markerRef.current = L.marker([FALLBACK_CENTER.lat, FALLBACK_CENTER.lon], {
+      icon: mapPinIcon,
+    }).addTo(map);
     mapRef.current = map;
   }, []);
 
@@ -83,7 +82,7 @@ function App() {
     const coords = [details.lat, details.lon];
 
     if (!markerRef.current || !markerRef.current._map) {
-      markerRef.current = L.marker(coords).addTo(mapRef.current);
+      markerRef.current = L.marker(coords, { icon: mapPinIcon }).addTo(mapRef.current);
     } else {
       markerRef.current.setLatLng(coords);
     }
